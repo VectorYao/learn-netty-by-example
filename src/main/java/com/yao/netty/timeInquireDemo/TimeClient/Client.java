@@ -32,10 +32,10 @@ public class Client {
             // 发起异步连接操作
             ChannelFuture f = b.connect(host, port).sync();
 
-            // 当代客户端链路关闭
+            //客户端链路关闭
             f.channel().closeFuture().sync();
         } finally {
-            // 优雅退出，释放NIO线程组
+            //优雅退出，释放线程池资源
             group.shutdownGracefully();
         }
     }

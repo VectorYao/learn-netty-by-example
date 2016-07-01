@@ -12,7 +12,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  */
 public class Server {
     public void bind(int port) throws Exception {
-        // 配置服务端的NIO线程组
+        //配置服务端的NIO线程组
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -21,13 +21,13 @@ public class Server {
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG, 1024)
                     .childHandler(new ChildChannelHandler());
-            // 绑定端口，同步等待成功
+            //绑定端口，同步等待成功
             ChannelFuture f = b.bind(port).sync();
 
-            // 等待服务端监听端口关闭
+            //等待服务端监听端口关闭
             f.channel().closeFuture().sync();
         } finally {
-            // 优雅退出，释放线程池资源
+            //优雅退出，释放线程池资源
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
