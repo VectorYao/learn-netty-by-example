@@ -20,7 +20,7 @@ public class EchoServer {
 
     public static void main(String[] args) throws InterruptedException {
         //配置服务器
-        EventLoopGroup boss = new NioEventLoopGroup();
+        EventLoopGroup boss = new NioEventLoopGroup(1);
         EventLoopGroup worker = new NioEventLoopGroup();
         try{
             ServerBootstrap sb = new ServerBootstrap();
