@@ -13,7 +13,7 @@ import io.netty.handler.logging.LoggingHandler;
  * @create 2016/7/4
  */
 public class TelnetServer {
-    static final int PORT = Integer.parseInt(System.getProperty("port", "8023"));
+    static final int PORT = Integer.parseInt(System.getProperty("port", "8968"));
 
     public static void main(String[] args) throws InterruptedException {
         EventLoopGroup boss  = new NioEventLoopGroup(1);

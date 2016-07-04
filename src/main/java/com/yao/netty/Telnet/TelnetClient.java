@@ -16,7 +16,7 @@ import java.io.InputStreamReader;
  */
 public class TelnetClient {
     static final String HOST = System.getProperty("host", "127.0.0.1");
-    static final int PORT = Integer.parseInt(System.getProperty("port", "8023"));
+    static final int PORT = Integer.parseInt(System.getProperty("port", "8968"));
 
     public static void main(String[] args) throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();

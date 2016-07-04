@@ -16,7 +16,7 @@ import io.netty.handler.logging.LoggingHandler;
  * @create 2016/7/1
  */
 public class EchoServer {
-    static final int PORT = Integer.parseInt(System.getProperty("port","8007"));
+    static final int PORT = Integer.parseInt(System.getProperty("port","8968"));
 
     public static void main(String[] args) throws InterruptedException {
         //配置服务器
