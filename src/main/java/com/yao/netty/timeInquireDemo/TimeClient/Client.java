@@ -1,4 +1,4 @@
-package com.yao.netty.timeInquireDemo.TimeClient;
+package com.yao.netty.TimeInquireDemo.TimeClient;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;

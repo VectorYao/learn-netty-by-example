@@ -1,4 +1,4 @@
-package com.yao.netty.timeInquireDemo.TimeServer;
+package com.yao.netty.TimeInquireDemo.TimeServer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
