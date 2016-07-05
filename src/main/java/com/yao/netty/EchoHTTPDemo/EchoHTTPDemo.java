@@ -4,13 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -41,30 +35,29 @@ public class EchoHTTPDemo {
     public ChannelFuture server(EventLoopGroup workerGroup) {
         ServerBootstrap b = new ServerBootstrap();
         b.group(workerGroup).channel(NioServerSocketChannel.class)
-                //Setting InetSocketAddress to port 0 will assign one at random
+                //参数为0，InetSocketAddress会在区间[0，65535]随机挑选一个端口
                 .localAddress(new InetSocketAddress(0))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        //HttpServerCodec is a helper ChildHandler that encompasses
-                        //both HTTP request decoding and HTTP response encoding
-                        ch.pipeline().addLast(new HttpServerCodec());
+                        ChannelPipeline pipeline = ch.pipeline();
+
+                        pipeline.addLast(new HttpServerCodec());
+
                         //HttpObjectAggregator helps collect chunked HttpRequest pieces into
                         //a single FullHttpRequest. If you don't make use of streaming, this is
                         //much simpler to work with.
-                        ch.pipeline().addLast(new HttpObjectAggregator(1048576));
-                        //Finally add your FullHttpRequest handler. Real examples might replace this
-                        //with a request router
-                        ch.pipeline().addLast(new SimpleChannelInboundHandler<FullHttpRequest>() {
+                        pipeline.addLast(new HttpObjectAggregator(1048576));
+
+                        pipeline.addLast(new SimpleChannelInboundHandler<FullHttpRequest>() {
                             @Override
                             public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
                                 ctx.flush();
-                                //The close is important here in an HTTP request as it sets the Content-Length of a
-                                //response body back to the client.
                                 ctx.close();
                             }
                             @Override
                             protected void messageReceived(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
+                                //构建默认的HTTP响应报文
                                 DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, msg.content().copy());
                                 ctx.write(response);
                             }
@@ -72,7 +65,6 @@ public class EchoHTTPDemo {
                     }
                 });
 
-        // Start the server & bind to a random port.
         return b.bind();
     }
 
@@ -83,14 +75,11 @@ public class EchoHTTPDemo {
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        //HttpClient codec is a helper ChildHandler that encompasses
-                        //both HTTP response decoding and HTTP request encoding
-                        ch.pipeline().addLast(new HttpClientCodec());
-                        //HttpObjectAggregator helps collect chunked HttpRequest pieces into
-                        //a single FullHttpRequest. If you don't make use of streaming, this is
-                        //much simpler to work with.
-                        ch.pipeline().addLast(new HttpObjectAggregator(1048576));
-                        ch.pipeline().addLast(new SimpleChannelInboundHandler<FullHttpResponse>() {
+                        ChannelPipeline pipeline = ch.pipeline();
+
+                        pipeline.addLast(new HttpClientCodec());
+                        pipeline.addLast(new HttpObjectAggregator(1048576));
+                        pipeline.addLast(new SimpleChannelInboundHandler<FullHttpResponse>() {
                             @Override
                             protected void messageReceived(ChannelHandlerContext ctx, FullHttpResponse msg) throws Exception {
                                 final String echo = msg.content().toString(CharsetUtil.UTF_8);
@@ -134,7 +123,7 @@ public class EchoHTTPDemo {
 
             serverChannel.closeFuture().sync();
         }finally {
-            //Gracefully shutdown both event loop groups
+            //优雅关闭，释放线程池资源
             serverWorkgroup.shutdownGracefully();
             clientWorkgroup.shutdownGracefully();
         }

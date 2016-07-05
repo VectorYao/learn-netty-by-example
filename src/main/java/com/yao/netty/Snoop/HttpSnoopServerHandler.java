@@ -40,7 +40,6 @@ import static io.netty.handler.codec.http.HttpVersion.*;
 public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> {
 
     private HttpRequest request;
-    /** Buffer that stores the response content */
     private final StringBuilder buf = new StringBuilder();
 
     @Override
@@ -52,7 +51,10 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
     protected void messageReceived(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpRequest) {
             HttpRequest request = this.request = (HttpRequest) msg;
-
+            /**
+             * Expect:100-Continue握手的目的，是为了允许客户端在发送请求内容之前，判断源服务器是否愿意接受请求（基于请求头部）;
+             * Expect:100-Continue握手需谨慎使用，因为遇到不支持HTTP/1.1协议的服务器或者代理时会引起问题.
+             */
             if (HttpHeaders.is100ContinueExpected(request)) {
                 send100Continue(ctx);
             }
@@ -65,6 +67,7 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
             buf.append("HOSTNAME: ").append(request.headers().get(Names.HOST)).append("\r\n");
             buf.append("REQUEST_URI: ").append(request.getUri()).append("\r\n\r\n");
 
+            //解析客户端的HTTP报文头
             HttpHeaders headers = request.headers();
             if (!headers.isEmpty()) {
                 for (Entry<String, String> h: headers) {
@@ -75,6 +78,7 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
                 buf.append("\r\n");
             }
 
+            //解析客户端的HTTP请求的URL参数
             QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.getUri());
             Map<String, List<String>> params = queryStringDecoder.parameters();
             if (!params.isEmpty()) {
@@ -91,6 +95,7 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
             appendDecoderResult(buf, request);
         }
 
+        //解析HTTP报文的实体内容
         if (msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
 
@@ -103,8 +108,6 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
             }
 
             if (msg instanceof LastHttpContent) {
-                buf.append("END OF CONTENT\r\n");
-
                 LastHttpContent trailer = (LastHttpContent) msg;
                 if (!trailer.trailingHeaders().isEmpty()) {
                     buf.append("\r\n");
@@ -118,7 +121,7 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
                 }
 
                 if (!writeResponse(trailer, ctx)) {
-                    // If keep-alive is off, close the connection once the content is fully written.
+                    // 如果不是长连接，则在发送完所有的内容后关闭连接
                     ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
                 }
             }
@@ -137,9 +140,10 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     private boolean writeResponse(HttpObject currentObj, ChannelHandlerContext ctx) {
-        // Decide whether to close the connection or not.
+
+        // 是否继续保持连接
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
-        // Build the response object.
+        // 构建响应的内容
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HTTP_1_1, currentObj.getDecoderResult().isSuccess()? OK : BAD_REQUEST,
                 Unpooled.copiedBuffer(buf.toString(), CharsetUtil.UTF_8));
@@ -147,30 +151,25 @@ public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> 
         response.headers().set(Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
         if (keepAlive) {
-            // Add 'Content-Length' header only for a keep-alive connection.
             response.headers().set(Names.CONTENT_LENGTH, response.content().readableBytes());
-            // Add keep alive header as per:
-            // - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection
             response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
         }
 
-        // Encode the cookie.
+        // 编码Cookie
         String cookieString = request.headers().get(Names.COOKIE);
         if (cookieString != null) {
             Set<Cookie> cookies = CookieDecoder.decode(cookieString);
             if (!cookies.isEmpty()) {
-                // Reset the cookies if necessary.
                 for (Cookie cookie: cookies) {
                     response.headers().add(Names.SET_COOKIE, ServerCookieEncoder.encode(cookie));
                 }
             }
         } else {
-            // Browser sent no cookie.  Add some.
+            // 如果没有Cookie，则添加两个
             response.headers().add(Names.SET_COOKIE, ServerCookieEncoder.encode("key1", "value1"));
             response.headers().add(Names.SET_COOKIE, ServerCookieEncoder.encode("key2", "value2"));
         }
 
-        // Write the response.
         ctx.write(response);
 
         return keepAlive;

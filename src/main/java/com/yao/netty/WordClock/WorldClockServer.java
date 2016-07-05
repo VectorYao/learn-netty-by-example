@@ -41,7 +41,6 @@ public class WorldClockServer {
 
                             pipeline.addLast(new WorldClockServerHandler());
                         }
-
                     });
 
             b.bind(PORT).sync().channel().closeFuture().sync();

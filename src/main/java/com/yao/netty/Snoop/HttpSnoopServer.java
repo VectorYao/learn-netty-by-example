@@ -28,18 +28,15 @@ import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 /**
- * An HTTP server that sends back the content of the received HTTP request
- * in a pretty plaintext form.
+ * 接受客户端传来的
  * @author Yao
  * @create 2016/7/5
  */
 public final class HttpSnoopServer {
 
-    static final boolean SSL = System.getProperty("ssl") != null;
-    static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
+    static final int PORT = Integer.parseInt(System.getProperty("port", "8968"));
 
     public static void main(String[] args) throws Exception {
-        // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -65,7 +62,7 @@ public final class HttpSnoopServer {
             Channel ch = b.bind(PORT).sync().channel();
 
             System.err.println("Open your web browser and navigate to " +
-                    (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
+                    "http"+ "://127.0.0.1:" + PORT + '/');
 
             ch.closeFuture().sync();
         } finally {

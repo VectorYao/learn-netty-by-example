@@ -20,7 +20,6 @@ public class WorldClockClientHandler extends SimpleChannelInboundHandler<WorldCl
 
     private static final Pattern DELIM = Pattern.compile("/");
 
-    // Stateful properties
     private volatile Channel channel;
     private final BlockingQueue<WorldClockProtocol.LocalTimes> answer = new LinkedBlockingQueue<WorldClockProtocol.LocalTimes>();
 
@@ -31,6 +30,7 @@ public class WorldClockClientHandler extends SimpleChannelInboundHandler<WorldCl
     public List<String> getLocalTimes(Collection<String> cities) {
         WorldClockProtocol.Locations.Builder builder = WorldClockProtocol.Locations.newBuilder();
 
+        //构建locations数组消息协议对象
         for (String c: cities) {
             String[] components = DELIM.split(c);
             builder.addLocation(WorldClockProtocol.Location.newBuilder().
@@ -44,7 +44,7 @@ public class WorldClockClientHandler extends SimpleChannelInboundHandler<WorldCl
         boolean interrupted = false;
         for (;;) {
             try {
-                localTimes = answer.take();
+                localTimes = answer.take();//得到处理后的结果集
                 break;
             } catch (InterruptedException ignore) {
                 interrupted = true;
@@ -79,6 +79,7 @@ public class WorldClockClientHandler extends SimpleChannelInboundHandler<WorldCl
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, WorldClockProtocol.LocalTimes times) throws Exception {
+        //得到服务器端运算的时间结果集LocalTimes
         answer.add(times);
     }
 

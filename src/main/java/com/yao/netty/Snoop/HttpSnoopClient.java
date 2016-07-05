@@ -30,14 +30,13 @@ import io.netty.handler.codec.http.HttpHeaders.Values;
 import java.net.URI;
 
 /**
- * A simple HTTP client that prints out the content of the HTTP response to
- * {@link System#out} to test {@link HttpSnoopServer}.
+ * 简单的Http应用，打印从服务器端接收到的消息
  * @author Yao
  * @create 2016/7/5
  */
 public final class HttpSnoopClient {
 
-    static final String URL = System.getProperty("url", "http://127.0.0.1:8080/");
+    static final String URL = System.getProperty("url", "http://127.0.0.1:8968/");
 
     public static void main(String[] args) throws Exception {
         URI uri = new URI(URL);
@@ -57,8 +56,6 @@ public final class HttpSnoopClient {
             return;
         }
 
-
-        // Configure the client.
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
@@ -81,30 +78,29 @@ public final class HttpSnoopClient {
                 }
              });
 
-            // Make the connection attempt.
+            // 连接服务器并阻塞
             Channel ch = b.connect(host, port).sync().channel();
 
-            // Prepare the HTTP request.
+            // 构造HTTP请求
             HttpRequest request = new DefaultFullHttpRequest(
                     HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getRawPath());
             request.headers().set(Names.HOST, host);
             request.headers().set(Names.CONNECTION, Values.CLOSE);
             request.headers().set(Names.ACCEPT_ENCODING, Values.GZIP);
 
-            // Set some example cookies.
+            // 设置一些简单的Cookie键值对
             request.headers().set(
                     Names.COOKIE,
                     ClientCookieEncoder.encode(
                             new DefaultCookie("my-cookie", "foo"),
                             new DefaultCookie("another-cookie", "bar")));
 
-            // Send the HTTP request.
+            // 发送HTTP请求
             ch.writeAndFlush(request);
 
-            // Wait for the server to close the connection.
+            // 等待服务器关闭连接.
             ch.closeFuture().sync();
         } finally {
-            // Shut down executor threads to exit.
             group.shutdownGracefully();
         }
     }

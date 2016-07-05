@@ -48,19 +48,19 @@ public class WorldClockClient {
                         }
                     });
 
-            // Make a new connection.
+            //启动连接到服务器
             Channel ch = b.connect(HOST, PORT).sync().channel();
 
-            // Get the handler instance to initiate the request.
+            // 得到事件处理实例去初始化请求.
             WorldClockClientHandler handler = ch.pipeline().get(WorldClockClientHandler.class);
 
-            // Request and get the response.
+            // 发出请求，得到响应结果
             List<String> response = handler.getLocalTimes(CITIES);
 
-            // Close the connection.
+            // 关闭连接
             ch.close();
 
-            // Print the response at last but not least.
+            // 打印结果.
             for (int i = 0; i < CITIES.size(); i ++) {
                 System.out.format("%28s: %s%n", CITIES.get(i), response.get(i));
             }
