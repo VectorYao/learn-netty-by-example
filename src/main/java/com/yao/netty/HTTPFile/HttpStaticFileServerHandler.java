@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpHeaders.Values;
 import io.netty.handler.ssl.SslHandler;
@@ -114,18 +113,18 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         // Write the content.
         ChannelFuture sendFileFuture;
         ChannelFuture lastContentFuture;
-        if (ctx.pipeline().get(SslHandler.class) == null) {
+//        if (ctx.pipeline().get(SslHandler.class) == null) {
             sendFileFuture =
                     ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
             // Write the end marker.
             lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-        } else {
-            sendFileFuture =
-                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
-                            ctx.newProgressivePromise());
-            // HttpChunkedInput will write the end marker (LastHttpContent) for us.
-            lastContentFuture = sendFileFuture;
-        }
+//        } else {
+//            sendFileFuture =
+//                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
+//                            ctx.newProgressivePromise());
+//            // HttpChunkedInput will write the end marker (LastHttpContent) for us.
+//            lastContentFuture = sendFileFuture;
+//        }
 
         sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
             public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
