@@ -15,9 +15,12 @@ public class EchoClientHandler extends ChannelHandlerAdapter{
     private final ByteBuf firstMessage;
 
     public EchoClientHandler(){
-        //设置要发送的第一条消息内容
+        //分配给定大小的堆ByteBuf（大端序），可无限扩展
         firstMessage = Unpooled.buffer(EchoClient.SIZE);
+
+        //设置要发送的第一条消息内容
         for(int i=0; i<firstMessage.capacity(); i++){
+            //writeByte只会取低8位，高24位忽视，writerIndex会自动加1
             firstMessage.writeByte((byte)i);
         }
     }

@@ -60,11 +60,11 @@ public class NettyServerBootstrap {
         Thread thread = new Thread(){
             public void run(){
                 while(true){
-                    for (String clientID:NettyChannelMap.getAllKeys()){
-                        if(clientID != null){
+                    for (long clientID:NettyChannelMap.getAllKeys()){
+                        if(clientID != 0){
                             AskMsg askMsg=new AskMsg();
                             AskParams ap = new AskParams();
-                            ap.setAuth(clientID);
+                            ap.setAuth(String.valueOf(clientID));
                             askMsg.setParams(ap);
                             NettyChannelMap.get(clientID).writeAndFlush(askMsg);
                         }

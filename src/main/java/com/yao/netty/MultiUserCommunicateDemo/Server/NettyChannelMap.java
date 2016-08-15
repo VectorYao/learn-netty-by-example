@@ -1,6 +1,5 @@
 package com.yao.netty.MultiUserCommunicateDemo.Server;
 
-import io.netty.channel.Channel;
 import io.netty.channel.socket.SocketChannel;
 
 import java.util.ArrayList;
@@ -12,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * 服务器端存储的<客户端id，客户端channel>映射管理
  */
 public class NettyChannelMap {
-    private  static Map<String,SocketChannel> map=new ConcurrentHashMap<String, SocketChannel>();
-    public static void add(String clientId,SocketChannel socketChannel){
+    private  static Map<Long,SocketChannel> map=new ConcurrentHashMap<Long, SocketChannel>();
+    public static void add(long clientId,SocketChannel socketChannel){
         map.put(clientId,socketChannel);
     }
-    public static SocketChannel get(String clientId){
+    public static SocketChannel get(long clientId){
        return map.get(clientId);
     }
     public static void remove(SocketChannel socketChannel){
@@ -26,9 +25,9 @@ public class NettyChannelMap {
             }
         }
     }
-    public static List<String> getAllKeys(){
-        List<String> list = new ArrayList<String>();
-        for (String key:map.keySet()){
+    public static List<Long> getAllKeys(){
+        List<Long> list = new ArrayList<Long>();
+        for (long key:map.keySet()){
             list.add(key);
         }
         return list;

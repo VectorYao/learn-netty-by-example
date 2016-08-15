@@ -23,7 +23,7 @@ public class NettyServerHandler extends ChannelHandlerAdapter {
         BaseMsg baseMsg = (BaseMsg)msg;
         if(MsgType.LOGIN.equals(baseMsg.getType())){
             LoginMsg loginMsg=(LoginMsg)baseMsg;
-            if("robin".equals(loginMsg.getUserName())&&"yao".equals(loginMsg.getPassword())){
+            if("yao".equals(loginMsg.getUserName())&&"123456".equals(loginMsg.getPassword())){
                 //登录成功,把channel存到服务端的map中
                 NettyChannelMap.add(loginMsg.getClientId(),(SocketChannel)channelHandlerContext.channel());
                 System.out.println("client"+loginMsg.getClientId()+" 登录成功");
@@ -36,29 +36,32 @@ public class NettyServerHandler extends ChannelHandlerAdapter {
             }
         }
         System.out.println("Receive Client Message Type is " + baseMsg.getType().toString());
+
         switch (baseMsg.getType()){
             case PING:{
                 PingMsg pingMsg=(PingMsg)baseMsg;
                 PingMsg replyPing=new PingMsg();
                 NettyChannelMap.get(pingMsg.getClientId()).writeAndFlush(replyPing);
-            }break;
+                break;
+            }
             case ASK:{
                 //收到客户端的请求
                 AskMsg askMsg=(AskMsg)baseMsg;
                 if("authToken".equals(askMsg.getParams().getAuth())){
-                    ReplyServerBody replyBody=new ReplyServerBody("server reply info $$$$ !!!");
+                    ReplyBody replyBody=new ReplyBody("server reply info client "+askMsg.getClientId()+"!!!");
                     ReplyMsg replyMsg=new ReplyMsg();
                     replyMsg.setBody(replyBody);
                     NettyChannelMap.get(askMsg.getClientId()).writeAndFlush(replyMsg);
                 }
-            }break;
+                break;
+            }
             case REPLY:{
                 //收到客户端回复
                 ReplyMsg replyMsg=(ReplyMsg)baseMsg;
-                ReplyClientBody clientBody=(ReplyClientBody)replyMsg.getBody();
-                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"receive client msg: "+clientBody.getClientInfo());
-            }break;
-            default:break;
+                ReplyBody clientBody=replyMsg.getBody();
+                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"receive client msg: "+clientBody.getReplyInfo());
+                break;
+            }
         }
         ReferenceCountUtil.release(baseMsg);
     }

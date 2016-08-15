@@ -33,28 +33,31 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<BaseMsg> {
         System.out.println("Receive Server Message Type is " + msgType.toString());
         switch (msgType){
             case LOGIN:{
-                //向服务器发起登录
+                //用于超时或掉线时，服务器发起登录消息让客户端重连
                 LoginMsg loginMsg=new LoginMsg();
-                loginMsg.setPassword("yao");
-                loginMsg.setUserName("robin");
+                loginMsg.setClientId(baseMsg.getClientId());
+                loginMsg.setUserName("yao");
+                loginMsg.setPassword("123456");
                 channelHandlerContext.writeAndFlush(loginMsg);
-            }break;
+                break;
+            }
             case PING:{
                 System.out.println("receive ping from server----------");
             }break;
             case ASK:{
                 AskMsg ask = (AskMsg)baseMsg;
-                ReplyClientBody replyClientBody=new ReplyClientBody("Client: "+ask.getParams().getAuth()+"Reply Ask commond");
+                ReplyBody replyBody=new ReplyBody("Client: "+ask.getParams().getAuth()+"Reply Ask commond");
                 ReplyMsg replyMsg=new ReplyMsg();
-                replyMsg.setBody(replyClientBody);
+                replyMsg.setBody(replyBody);
                 channelHandlerContext.writeAndFlush(replyMsg);
-            }break;
+                break;
+            }
             case REPLY:{
                 ReplyMsg replyMsg=(ReplyMsg)baseMsg;
-                ReplyServerBody replyServerBody=(ReplyServerBody)replyMsg.getBody();
-                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"receive Server msg: "+replyServerBody.getServerInfo());
+                ReplyBody replyServerBody=replyMsg.getBody();
+                System.out.println("Client "+String.valueOf(baseMsg.getClientId())+new Timestamp(System.currentTimeMillis()).toString()+"receive Server msg: "+replyServerBody.getReplyInfo());
+                break;
             }
-            default:break;
         }
         ReferenceCountUtil.release(msgType);
     }
