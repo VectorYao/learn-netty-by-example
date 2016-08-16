@@ -7,7 +7,6 @@ public class LoginMsg extends BaseMsg {
     private String userName;
     private String password;
     public LoginMsg() {
-        super();
         setType(MsgType.LOGIN);
     }
 

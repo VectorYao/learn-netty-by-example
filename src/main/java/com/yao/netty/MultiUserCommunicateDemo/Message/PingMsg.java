@@ -5,7 +5,6 @@ package com.yao.netty.MultiUserCommunicateDemo.Message;
  */
 public class PingMsg extends BaseMsg {
     public PingMsg() {
-        super();
         setType(MsgType.PING);
     }
 }

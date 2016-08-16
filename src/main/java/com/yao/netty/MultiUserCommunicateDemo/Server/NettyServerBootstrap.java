@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class NettyServerBootstrap {
     private int port;
-    private SocketChannel socketChannel;
     public NettyServerBootstrap(int port) throws InterruptedException {
         this.port = port;
     }
@@ -26,29 +25,29 @@ public class NettyServerBootstrap {
         EventLoopGroup boss=new NioEventLoopGroup();
         EventLoopGroup worker=new NioEventLoopGroup();
         try{
-        ServerBootstrap bootstrap=new ServerBootstrap();
-        bootstrap.group(boss,worker);
-        bootstrap.channel(NioServerSocketChannel.class);
-        bootstrap.option(ChannelOption.SO_BACKLOG, 128);
-        bootstrap.option(ChannelOption.TCP_NODELAY, true);
-        bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
-        bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel socketChannel) throws Exception {
-                ChannelPipeline p = socketChannel.pipeline();
-                p.addLast(new ObjectEncoder());
-                p.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
-                p.addLast(new NettyServerHandler());
+            ServerBootstrap bootstrap=new ServerBootstrap();
+            bootstrap.group(boss,worker);
+            bootstrap.channel(NioServerSocketChannel.class);
+            bootstrap.option(ChannelOption.SO_BACKLOG, 128);
+            bootstrap.option(ChannelOption.TCP_NODELAY, true);
+            bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
+            bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel socketChannel) throws Exception {
+                    ChannelPipeline p = socketChannel.pipeline();
+                    p.addLast(new ObjectEncoder());
+                    p.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
+                    p.addLast(new NettyServerHandler());
+                }
+            });
+            //Start the server
+            ChannelFuture f= bootstrap.bind(port).sync();
+            if(f.isSuccess()){
+                System.out.println("server start---------------");
             }
-        });
-        //Start the server
-        ChannelFuture f= bootstrap.bind(port).sync();
-        if(f.isSuccess()){
-            System.out.println("server start---------------");
-        }
 
-        //Wait until the server socket is closed
-        f.channel().closeFuture().sync();
+            //Wait until the server socket is closed
+            f.channel().closeFuture().sync();
         }finally{
             //优雅的退出
             boss.shutdownGracefully();
@@ -60,11 +59,10 @@ public class NettyServerBootstrap {
         Thread thread = new Thread(){
             public void run(){
                 while(true){
-                    for (long clientID:NettyChannelMap.getAllKeys()){
+                    for (long clientID : NettyChannelMap.getAllKeys()){
                         if(clientID != 0){
                             AskMsg askMsg=new AskMsg();
                             AskParams ap = new AskParams();
-                            ap.setAuth(String.valueOf(clientID));
                             askMsg.setParams(ap);
                             NettyChannelMap.get(clientID).writeAndFlush(askMsg);
                         }
@@ -82,22 +80,6 @@ public class NettyServerBootstrap {
         new NettyServerBootstrap(9999).bind();
         //为什么执行不到这里？
         System.out.println("Netty Server Bootstrap");
-
-//        //为什么这里会阻塞？
-//        while(true){
-//            System.out.println("Netty Server Bootstrap1");
-//            for (String clientID:NettyChannelMap.getAllKeys()){
-//                System.out.println("Netty Server Bootstrap2");
-//                if(clientID != null){
-//                    AskMsg askMsg=new AskMsg();
-//                    AskParams ap = new AskParams();
-//                    ap.setAuth(clientID);
-//                    askMsg.setParams(ap);
-//                    NettyChannelMap.get(clientID).writeAndFlush(askMsg);
-//                }
-//            }
-//            TimeUnit.SECONDS.sleep(3);
-//        }
     }
 
 }

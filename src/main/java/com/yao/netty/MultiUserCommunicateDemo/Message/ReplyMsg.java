@@ -5,7 +5,6 @@ package com.yao.netty.MultiUserCommunicateDemo.Message;
  */
 public class ReplyMsg extends BaseMsg {
     public ReplyMsg() {
-        super();
         setType(MsgType.REPLY);
     }
     private ReplyBody body;

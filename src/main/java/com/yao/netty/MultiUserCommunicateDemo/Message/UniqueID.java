@@ -22,7 +22,6 @@ public class UniqueID {
 
     //10 bit serverid,30 bit time, 24 bit addid
     public static long genUniqueID() {
-
         if (!inited) {
             initFactor();
         }

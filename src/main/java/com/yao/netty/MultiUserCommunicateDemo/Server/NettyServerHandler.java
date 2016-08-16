@@ -3,8 +3,6 @@ package com.yao.netty.MultiUserCommunicateDemo.Server;
 import com.yao.netty.MultiUserCommunicateDemo.Message.*;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCountUtil;
 
@@ -16,50 +14,52 @@ import java.sql.Timestamp;
 public class NettyServerHandler extends ChannelHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        NettyChannelMap.remove((SocketChannel)ctx.channel());
+        NettyChannelMap.remove((SocketChannel) ctx.channel());
     }
+
     @Override
-    public void channelRead(ChannelHandlerContext channelHandlerContext, Object msg){
+    public void channelRead(ChannelHandlerContext ctx, Object msg){
         BaseMsg baseMsg = (BaseMsg)msg;
-        if(MsgType.LOGIN.equals(baseMsg.getType())){
-            LoginMsg loginMsg=(LoginMsg)baseMsg;
-            if("yao".equals(loginMsg.getUserName())&&"123456".equals(loginMsg.getPassword())){
-                //登录成功,把channel存到服务端的map中
-                NettyChannelMap.add(loginMsg.getClientId(),(SocketChannel)channelHandlerContext.channel());
-                System.out.println("client"+loginMsg.getClientId()+" 登录成功");
-            }
-        }else{
-            if(NettyChannelMap.get(baseMsg.getClientId())==null){
-                    //说明未登录，或者连接断了，服务器向客户端发起登录请求，让客户端重新登录
-                    LoginMsg loginMsg=new LoginMsg();
-                    channelHandlerContext.channel().writeAndFlush(loginMsg);
-            }
+        long playerId = 0;
+
+        if(! MsgType.LOGIN.equals(baseMsg.getType())){
+            playerId = ctx.channel().attr(CTXAttr.PLAYERID).get();
         }
-        System.out.println("Receive Client Message Type is " + baseMsg.getType().toString());
 
         switch (baseMsg.getType()){
+            case LOGIN:{
+                LoginMsg loginMsg=(LoginMsg)baseMsg;
+                if("yao".equals(loginMsg.getUserName())&&"123456".equals(loginMsg.getPassword())){
+                    long id = UniqueID.genUniqueID();
+                    ctx.channel().attr(CTXAttr.PLAYERID).set(id);
+                    NettyChannelMap.add(id,(SocketChannel) ctx.channel());
+                    //发送给客户端登录成功的消息，返回分配的唯一id
+                    LoginSuccessMsg lsMsg = new LoginSuccessMsg();
+                    lsMsg.setPlayerId(id);
+                    NettyChannelMap.get(id).writeAndFlush(lsMsg);
+                    System.out.println("client ["+id+"] 登录成功");
+                }
+                break;
+            }
             case PING:{
-                PingMsg pingMsg=(PingMsg)baseMsg;
                 PingMsg replyPing=new PingMsg();
-                NettyChannelMap.get(pingMsg.getClientId()).writeAndFlush(replyPing);
+                NettyChannelMap.get(playerId).writeAndFlush(replyPing);
                 break;
             }
             case ASK:{
-                //收到客户端的请求
                 AskMsg askMsg=(AskMsg)baseMsg;
                 if("authToken".equals(askMsg.getParams().getAuth())){
-                    ReplyBody replyBody=new ReplyBody("server reply info client "+askMsg.getClientId()+"!!!");
+                    ReplyBody replyBody=new ReplyBody("服务器已成功接收到client "+playerId+"的ASK消息!!!");
                     ReplyMsg replyMsg=new ReplyMsg();
                     replyMsg.setBody(replyBody);
-                    NettyChannelMap.get(askMsg.getClientId()).writeAndFlush(replyMsg);
+                    NettyChannelMap.get(playerId).writeAndFlush(replyMsg);
                 }
                 break;
             }
             case REPLY:{
-                //收到客户端回复
                 ReplyMsg replyMsg=(ReplyMsg)baseMsg;
                 ReplyBody clientBody=replyMsg.getBody();
-                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"receive client msg: "+clientBody.getReplyInfo());
+                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"："+clientBody.getReplyInfo());
                 break;
             }
         }
@@ -68,7 +68,8 @@ public class NettyServerHandler extends ChannelHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception{
-        cause.printStackTrace();
+        System.out.println("Client ["+ctx.channel().attr(CTXAttr.PLAYERID).get()+"] 已关闭！");
+        NettyChannelMap.remove((SocketChannel) ctx.channel());
         ctx.close();
     }
 }

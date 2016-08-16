@@ -28,37 +28,37 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<BaseMsg> {
         }
     }
     @Override
-    protected void messageReceived(ChannelHandlerContext channelHandlerContext, BaseMsg baseMsg) throws Exception {
+    protected void messageReceived(ChannelHandlerContext ctx, BaseMsg baseMsg) throws Exception {
         MsgType msgType=baseMsg.getType();
-        System.out.println("Receive Server Message Type is " + msgType.toString());
         switch (msgType){
-            case LOGIN:{
-                //用于超时或掉线时，服务器发起登录消息让客户端重连
-                LoginMsg loginMsg=new LoginMsg();
-                loginMsg.setClientId(baseMsg.getClientId());
-                loginMsg.setUserName("yao");
-                loginMsg.setPassword("123456");
-                channelHandlerContext.writeAndFlush(loginMsg);
+            case LOGINSUCCESS:{
+                LoginSuccessMsg lsMsg = (LoginSuccessMsg)baseMsg;
+                ctx.channel().attr(CTXAttr.PLAYERID).set(lsMsg.getPlayerId());
                 break;
             }
             case PING:{
                 System.out.println("receive ping from server----------");
             }break;
             case ASK:{
-                AskMsg ask = (AskMsg)baseMsg;
-                ReplyBody replyBody=new ReplyBody("Client: "+ask.getParams().getAuth()+"Reply Ask commond");
+                ReplyBody replyBody=new ReplyBody("Client ["+ctx.channel().attr(CTXAttr.PLAYERID).get()+"] 已成功接收到服务器端的ASK消息");
                 ReplyMsg replyMsg=new ReplyMsg();
                 replyMsg.setBody(replyBody);
-                channelHandlerContext.writeAndFlush(replyMsg);
+                ctx.writeAndFlush(replyMsg);
                 break;
             }
             case REPLY:{
                 ReplyMsg replyMsg=(ReplyMsg)baseMsg;
                 ReplyBody replyServerBody=replyMsg.getBody();
-                System.out.println("Client "+String.valueOf(baseMsg.getClientId())+new Timestamp(System.currentTimeMillis()).toString()+"receive Server msg: "+replyServerBody.getReplyInfo());
+                System.out.println(new Timestamp(System.currentTimeMillis()).toString()+"："+replyServerBody.getReplyInfo());
                 break;
             }
         }
         ReferenceCountUtil.release(msgType);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception{
+        System.out.println("Server 已关闭！");
+        ctx.close();
     }
 }
